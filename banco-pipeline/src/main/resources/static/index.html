@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Banco Pipeline · Simulador de Transacciones</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+    .badge-link {
+      color: var(--text);
+      text-decoration: none;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .badge-link:hover { border-color: var(--primary); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card h2 { margin: 0 0 14px; font-size: 1.05rem; }
+    .field { margin-bottom: 14px; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin-top: 4px;
+      min-height: 1em;
+    }
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    .btn-preset {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+    .btn-preset:hover { border-color: var(--primary); }
+    .btn-submit {
+      width: 100%;
+      padding: 11px;
+      background: var(--primary);
+      color: white;
+    }
+    .btn-submit:hover { background: var(--primary-hover); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      margin: 0 0 14px;
+    }
+    .rule-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .pill-drop { background: rgba(148,163,184,0.15); color: var(--muted); }
+    .pill-ok { background: rgba(16,185,129,0.15); color: var(--ok); }
+    .pill-alert { background: rgba(239,68,68,0.18); color: var(--danger); }
+    .pill-invalid { background: rgba(245,158,11,0.18); color: var(--warn); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; }
+    .empty { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Pipeline Bancario · Kafka Streams</h1>
+        <p>Envío y validación de transacciones hacia <code>POST /api/banco/transaccion</code></p>
+      </div>
+      <a class="badge-link" href="http://localhost:8081" target="_blank" rel="noopener">Abrir Kafka UI (8081) ↗</a>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Nueva Transacción</h2>
+        <div class="presets">
+          <button type="button" class="btn-preset" onclick="aplicarEscenario('juan', 5, 'app')">Escenario 1: Monto 5 (Descartar)</button>
+          <button type="button" class="btn-preset" onclick="aplicarEscenario('juan', 500, 'app')">Escenario 2: Monto 500 (Normal)</button>
+          <button type="button" class="btn-preset" onclick="aplicarEscenario('juan', 15000, 'cajero')">Escenario 3: Monto 15000 (Alerta)</button>
+        </div>
+
+        <form id="txForm" novalidate>
+          <div class="field">
+            <label for="usuario">Usuario</label>
+            <input id="usuario" type="text" value="juan" placeholder="Ej: juan" required />
+            <div class="error-msg" id="err-usuario"></div>
+          </div>
+
+          <div class="field">
+            <label for="monto">Monto</label>
+            <input id="monto" type="number" step="any" value="15000" placeholder="Ej: 15000" required />
+            <div class="error-msg" id="err-monto"></div>
+          </div>
+
+          <div class="field">
+            <label for="origen">Origen</label>
+            <select id="origen">
+              <option value="cajero">cajero</option>
+              <option value="app">app</option>
+              <option value="web">web</option>
+              <option value="sucursal">sucursal</option>
+            </select>
+            <div class="error-msg" id="err-origen"></div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btnEnviar">Enviar Transacción</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Payload y Validación Esperada</h2>
+        <pre id="jsonPreview">{}</pre>
+        <div>
+          <label>Comportamiento esperado en Kafka Streams:</label>
+          <div id="expectedRule"></div>
+        </div>
+        <div style="margin-top: 16px;">
+          <label>Última respuesta del servidor:</label>
+          <pre id="lastResponse">Sin envíos todavía.</pre>
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>Historial de Envíos</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Usuario</th>
+            <th>Monto</th>
+            <th>Origen</th>
+            <th>HTTP</th>
+            <th>Regla Pipeline</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="6" class="empty">Envía una transacción para ver el registro.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const usuarioEl = document.getElementById('usuario');
+    const montoEl = document.getElementById('monto');
+    const origenEl = document.getElementById('origen');
+    const previewEl = document.getElementById('jsonPreview');
+    const expectedEl = document.getElementById('expectedRule');
+    const lastRespEl = document.getElementById('lastResponse');
+    const historyBody = document.getElementById('historyBody');
+    const btnEnviar = document.getElementById('btnEnviar');
+
+    function getPayload() {
+      const montoVal = montoEl.value === '' ? null : Number(montoEl.value);
+      return {
+        usuario: usuarioEl.value.trim(),
+        monto: montoVal,
+        origen: origenEl.value
+      };
+    }
+
+    function getRegla(monto, valido) {
+      if (!valido) return { text: '400 Datos inválidos (rechazada por API)', cls: 'pill-invalid' };
+      if (monto <= 10) return { text: 'Descartada (monto <= 10) · Solo en banco-transacciones', cls: 'pill-drop' };
+      if (monto > 10000) return { text: 'ALERTA ALTA (> 10000) · Publicada en banco-alertas', cls: 'pill-alert' };
+      return { text: 'Procesada (> 10 y <= 10000) · Sin alerta', cls: 'pill-ok' };
+    }
+
+    function validar(payload) {
+      let ok = true;
+      document.getElementById('err-usuario').textContent = '';
+      document.getElementById('err-monto').textContent = '';
+      document.getElementById('err-origen').textContent = '';
+
+      if (!payload.usuario) {
+        document.getElementById('err-usuario').textContent = 'El usuario es obligatorio.';
+        ok = false;
+      }
+      if (payload.monto === null || Number.isNaN(payload.monto) || payload.monto < 0) {
+        document.getElementById('err-monto').textContent = 'El monto debe ser un número mayor o igual a 0.';
+        ok = false;
+      }
+      if (!payload.origen) {
+        document.getElementById('err-origen').textContent = 'El origen es obligatorio.';
+        ok = false;
+      }
+      return ok;
+    }
+
+    function actualizarVista() {
+      const payload = getPayload();
+      previewEl.textContent = JSON.stringify(payload, null, 2);
+      const valido = payload.usuario.length > 0 && payload.monto !== null && !Number.isNaN(payload.monto) && payload.monto >= 0;
+      const regla = getRegla(payload.monto, valido);
+      expectedEl.innerHTML = `<span class="rule-pill ${regla.cls}">${regla.text}</span>`;
+    }
+
+    function aplicarEscenario(usuario, monto, origen) {
+      usuarioEl.value = usuario;
+      montoEl.value = monto;
+      origenEl.value = origen;
+      actualizarVista();
+    }
+
+    function agregarHistorial(payload, status, regla) {
+      if (historyBody.querySelector('.empty')) {
+        historyBody.innerHTML = '';
+      }
+      const tr = document.createElement('tr');
+      const hora = new Date().toLocaleTimeString();
+      tr.innerHTML = `
+        <td>${hora}</td>
+        <td>${payload.usuario}</td>
+        <td>${payload.monto}</td>
+        <td>${payload.origen}</td>
+        <td><strong>${status}</strong></td>
+        <td><span class="rule-pill ${regla.cls}">${regla.text}</span></td>
+      `;
+      historyBody.prepend(tr);
+    }
+
+    document.getElementById('txForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = getPayload();
+      if (!validar(payload)) return;
+
+      btnEnviar.disabled = true;
+      try {
+        const res = await fetch('/api/banco/transaccion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        lastRespEl.textContent = `HTTP ${res.status} ${res.statusText}\n${text}`;
+        const regla = getRegla(payload.monto, res.ok);
+        agregarHistorial(payload, res.status, regla);
+      } catch (err) {
+        lastRespEl.textContent = `Error de conexión: ${err.message}`;
+      } finally {
+        btnEnviar.disabled = false;
+      }
+    });
+
+    [usuarioEl, montoEl, origenEl].forEach(el => el.addEventListener('input', actualizarVista));
+    actualizarVista();
+  </script>
+</body>
+</html>
