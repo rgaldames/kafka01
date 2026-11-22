@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Banco Pipeline · Simulador de Transacciones</title>
+  <title>Pedidos360 · Control de Ventas y Existencias</title>
   <style>
     :root {
       --bg: #0b1120;
@@ -12,8 +12,8 @@
       --border: #334155;
       --text: #f8fafc;
       --muted: #94a3b8;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
+      --primary: #10b981;
+      --primary-hover: #059669;
       --ok: #10b981;
       --warn: #f59e0b;
       --danger: #ef4444;
@@ -44,6 +44,7 @@
     }
     header h1 { margin: 0; font-size: 1.4rem; }
     header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .badge-link {
       color: var(--text);
       text-decoration: none;
@@ -119,9 +120,9 @@
       width: 100%;
       padding: 11px;
       background: var(--primary);
-      color: white;
+      color: #06281e;
     }
-    .btn-submit:hover { background: var(--primary-hover); }
+    .btn-submit:hover { background: var(--primary-hover); color: white; }
     .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
     pre {
       background: var(--bg);
@@ -139,7 +140,6 @@
       font-size: 0.8rem;
       font-weight: 600;
     }
-    .pill-drop { background: rgba(148,163,184,0.15); color: var(--muted); }
     .pill-ok { background: rgba(16,185,129,0.15); color: var(--ok); }
     .pill-alert { background: rgba(239,68,68,0.18); color: var(--danger); }
     .pill-invalid { background: rgba(245,158,11,0.18); color: var(--warn); }
@@ -161,51 +161,54 @@
   <div class="container">
     <header>
       <div>
-        <h1>Pipeline Bancario · Kafka Streams</h1>
-        <p>Envío y validación de transacciones hacia <code>POST /api/banco/transaccion</code></p>
+        <h1>Pedidos360 · Retail y Control de Existencias</h1>
+        <p>Envío y validación de ventas hacia <code>POST /api/pedidos360/pedido</code></p>
       </div>
-      <a class="badge-link" href="http://localhost:8081" target="_blank" rel="noopener">Abrir Kafka UI (8081) ↗</a>
+      <div class="header-actions">
+        <a class="badge-link" href="/">← Menú principal</a>
+        <a class="badge-link" href="http://localhost:8081" target="_blank" rel="noopener">Abrir Kafka UI (8081) ↗</a>
+      </div>
     </header>
 
     <div class="grid">
       <section class="card">
-        <h2>Nueva Transacción</h2>
+        <h2>Nuevo Pedido / Venta</h2>
         <div class="presets">
-          <button type="button" class="btn-preset" onclick="aplicarEscenario('juan', 5, 'app')">Escenario 1: Monto 5 (Descartar)</button>
-          <button type="button" class="btn-preset" onclick="aplicarEscenario('juan', 500, 'app')">Escenario 2: Monto 500 (Normal)</button>
-          <button type="button" class="btn-preset" onclick="aplicarEscenario('juan', 15000, 'cajero')">Escenario 3: Monto 15000 (Alerta)</button>
+          <button type="button" class="btn-preset" onclick="aplicarEscenario('Audifonos Bluetooth', 2, 'ecommerce')">2 uds (Normal)</button>
+          <button type="button" class="btn-preset" onclick="aplicarEscenario('Teclado Mecanico', 3, 'tienda')">3 uds (Límite normal)</button>
+          <button type="button" class="btn-preset" onclick="aplicarEscenario('Monitor 27 pulgadas', 4, 'ecommerce')">4 uds (Alerta Stock >= 4)</button>
         </div>
 
-        <form id="txForm" novalidate>
+        <form id="pedidoForm" novalidate>
           <div class="field">
-            <label for="usuario">Usuario</label>
-            <input id="usuario" type="text" value="juan" placeholder="Ej: juan" required />
-            <div class="error-msg" id="err-usuario"></div>
+            <label for="producto">Nombre producto</label>
+            <input id="producto" type="text" value="Monitor 27 pulgadas" placeholder="Ej: Monitor 27 pulgadas" required />
+            <div class="error-msg" id="err-producto"></div>
           </div>
 
           <div class="field">
-            <label for="monto">Monto</label>
-            <input id="monto" type="number" step="any" value="15000" placeholder="Ej: 15000" required />
-            <div class="error-msg" id="err-monto"></div>
+            <label for="cantidad">Cantidad vendida</label>
+            <input id="cantidad" type="number" step="1" min="1" value="4" placeholder="Ej: 4" required />
+            <div class="error-msg" id="err-cantidad"></div>
           </div>
 
           <div class="field">
             <label for="origen">Origen</label>
             <select id="origen">
-              <option value="cajero">cajero</option>
+              <option value="ecommerce">ecommerce</option>
+              <option value="tienda">tienda</option>
               <option value="app">app</option>
-              <option value="web">web</option>
-              <option value="sucursal">sucursal</option>
+              <option value="mayorista">mayorista</option>
             </select>
             <div class="error-msg" id="err-origen"></div>
           </div>
 
-          <button type="submit" class="btn-submit" id="btnEnviar">Enviar Transacción</button>
+          <button type="submit" class="btn-submit" id="btnEnviar">Registrar Venta</button>
         </form>
       </section>
 
       <section class="card">
-        <h2>Payload y Validación Esperada</h2>
+        <h2>Payload y Validación de Existencias</h2>
         <pre id="jsonPreview">{}</pre>
         <div>
           <label>Comportamiento esperado en Kafka Streams:</label>
@@ -219,28 +222,28 @@
     </div>
 
     <section class="card">
-      <h2>Historial de Envíos</h2>
+      <h2>Historial de Ventas Enviadas</h2>
       <table>
         <thead>
           <tr>
             <th>Hora</th>
-            <th>Usuario</th>
-            <th>Monto</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
             <th>Origen</th>
             <th>HTTP</th>
-            <th>Regla Pipeline</th>
+            <th>Estado Existencias</th>
           </tr>
         </thead>
         <tbody id="historyBody">
-          <tr><td colspan="6" class="empty">Envía una transacción para ver el registro.</td></tr>
+          <tr><td colspan="6" class="empty">Registra una venta para ver el historial.</td></tr>
         </tbody>
       </table>
     </section>
   </div>
 
   <script>
-    const usuarioEl = document.getElementById('usuario');
-    const montoEl = document.getElementById('monto');
+    const productoEl = document.getElementById('producto');
+    const cantidadEl = document.getElementById('cantidad');
     const origenEl = document.getElementById('origen');
     const previewEl = document.getElementById('jsonPreview');
     const expectedEl = document.getElementById('expectedRule');
@@ -249,33 +252,32 @@
     const btnEnviar = document.getElementById('btnEnviar');
 
     function getPayload() {
-      const montoVal = montoEl.value === '' ? null : Number(montoEl.value);
+      const cantVal = cantidadEl.value === '' ? null : Number(cantidadEl.value);
       return {
-        usuario: usuarioEl.value.trim(),
-        monto: montoVal,
+        producto: productoEl.value.trim(),
+        cantidad: cantVal,
         origen: origenEl.value
       };
     }
 
-    function getRegla(monto, valido) {
-      if (!valido) return { text: '400 Datos inválidos (rechazada por API)', cls: 'pill-invalid' };
-      if (monto <= 10) return { text: 'Descartada (monto <= 10) · Solo en banco-transacciones', cls: 'pill-drop' };
-      if (monto > 10000) return { text: 'ALERTA ALTA (> 10000) · Publicada en banco-alertas', cls: 'pill-alert' };
-      return { text: 'Procesada (> 10 y <= 10000) · Sin alerta', cls: 'pill-ok' };
+    function getRegla(cantidad, valido) {
+      if (!valido) return { text: '400 Datos inválidos (cantidad debe ser > 0)', cls: 'pill-invalid' };
+      if (cantidad >= 4) return { text: 'ALERTA STOCK (>= 4 uds) · Publicada en pedidos360-alerta', cls: 'pill-alert' };
+      return { text: 'Venta procesada (<= 3 uds) · Sin alerta de stock', cls: 'pill-ok' };
     }
 
     function validar(payload) {
       let ok = true;
-      document.getElementById('err-usuario').textContent = '';
-      document.getElementById('err-monto').textContent = '';
+      document.getElementById('err-producto').textContent = '';
+      document.getElementById('err-cantidad').textContent = '';
       document.getElementById('err-origen').textContent = '';
 
-      if (!payload.usuario) {
-        document.getElementById('err-usuario').textContent = 'El usuario es obligatorio.';
+      if (!payload.producto) {
+        document.getElementById('err-producto').textContent = 'El nombre del producto es obligatorio.';
         ok = false;
       }
-      if (payload.monto === null || Number.isNaN(payload.monto) || payload.monto < 0) {
-        document.getElementById('err-monto').textContent = 'El monto debe ser un número mayor o igual a 0.';
+      if (payload.cantidad === null || !Number.isInteger(payload.cantidad) || payload.cantidad <= 0) {
+        document.getElementById('err-cantidad').textContent = 'La cantidad vendida debe ser un entero mayor a 0.';
         ok = false;
       }
       if (!payload.origen) {
@@ -288,14 +290,17 @@
     function actualizarVista() {
       const payload = getPayload();
       previewEl.textContent = JSON.stringify(payload, null, 2);
-      const valido = payload.usuario.length > 0 && payload.monto !== null && !Number.isNaN(payload.monto) && payload.monto >= 0;
-      const regla = getRegla(payload.monto, valido);
+      const valido = payload.producto.length > 0
+        && payload.cantidad !== null
+        && Number.isInteger(payload.cantidad)
+        && payload.cantidad > 0;
+      const regla = getRegla(payload.cantidad, valido);
       expectedEl.innerHTML = `<span class="rule-pill ${regla.cls}">${regla.text}</span>`;
     }
 
-    function aplicarEscenario(usuario, monto, origen) {
-      usuarioEl.value = usuario;
-      montoEl.value = monto;
+    function aplicarEscenario(producto, cantidad, origen) {
+      productoEl.value = producto;
+      cantidadEl.value = cantidad;
       origenEl.value = origen;
       actualizarVista();
     }
@@ -308,8 +313,8 @@
       const hora = new Date().toLocaleTimeString();
       tr.innerHTML = `
         <td>${hora}</td>
-        <td>${payload.usuario}</td>
-        <td>${payload.monto}</td>
+        <td>${payload.producto}</td>
+        <td>${payload.cantidad}</td>
         <td>${payload.origen}</td>
         <td><strong>${status}</strong></td>
         <td><span class="rule-pill ${regla.cls}">${regla.text}</span></td>
@@ -317,21 +322,21 @@
       historyBody.prepend(tr);
     }
 
-    document.getElementById('txForm').addEventListener('submit', async (e) => {
+    document.getElementById('pedidoForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const payload = getPayload();
       if (!validar(payload)) return;
 
       btnEnviar.disabled = true;
       try {
-        const res = await fetch('/api/banco/transaccion', {
+        const res = await fetch('/api/pedidos360/pedido', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const text = await res.text();
         lastRespEl.textContent = `HTTP ${res.status} ${res.statusText}\n${text}`;
-        const regla = getRegla(payload.monto, res.ok);
+        const regla = getRegla(payload.cantidad, res.ok);
         agregarHistorial(payload, res.status, regla);
       } catch (err) {
         lastRespEl.textContent = `Error de conexión: ${err.message}`;
@@ -340,7 +345,7 @@
       }
     });
 
-    [usuarioEl, montoEl, origenEl].forEach(el => el.addEventListener('input', actualizarVista));
+    [productoEl, cantidadEl, origenEl].forEach(el => el.addEventListener('input', actualizarVista));
     actualizarVista();
   </script>
 </body>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kafka Streams · Selector de Pipeline</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --retail: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 700px) {
+      .cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    .card.banco:hover {
+      border-color: var(--primary);
+    }
+
+    .card.retail:hover {
+      border-color: var(--retail);
+    }
+
+    .tag {
+      display: inline-block;
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .tag-banco {
+      background: rgba(59, 130, 246, 0.16);
+      color: #60a5fa;
+    }
+
+    .tag-retail {
+      background: rgba(16, 185, 129, 0.16);
+      color: #34d399;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .meta {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .footer-links {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    .badge-link {
+      display: inline-block;
+      color: var(--text);
+      text-decoration: none;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+
+    .badge-link:hover {
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Plataforma de Eventos · Kafka Streams</h1>
+      <p>Selecciona el módulo de validación y monitoreo que deseas utilizar</p>
+    </header>
+
+    <div class="cards">
+      <a class="card banco" href="/banco.html">
+        <span class="tag tag-banco">Finanzas · Fraud Detection</span>
+        <h2>Pipeline Bancario</h2>
+        <p>Envía transacciones financieras, filtra montos mínimos (≤ 10) y genera alertas automáticas de fraude cuando
+          el monto supera 10000.</p>
+        <div class="meta">Topics: <code>banco-transacciones</code> → <code>banco-alertas</code></div>
+      </a>
+
+      <a class="card retail" href="/pedidos360.html">
+        <span class="tag tag-retail">Retail · Control de Existencias</span>
+        <h2>Pedidos360</h2>
+        <p>Registra ventas de artículos, procesa pedidos normales (1 a 3 unidades) y genera alertas de inventario cuando
+          se venden más de 3 unidades.</p>
+        <div class="meta">Topics: <code>pedidos360-pedidos</code> → <code>pedidos360-alerta</code></div>
+      </a>
+    </div>
+
+    <div class="footer-links">
+      <a class="badge-link" href="http://localhost:8081" target="_blank" rel="noopener">Abrir Kafka UI (8081) ↗</a>
+    </div>
+  </div>
+</body>
+
+</html>
